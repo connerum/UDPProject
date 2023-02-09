@@ -41,6 +41,7 @@ public class ServerUDP {
             System.out.println(new String(message));
 
             InetAddress clientIP = request.getAddress();
+
             int clientPort = request.getPort();
 
             DatagramPacket reply = new DatagramPacket(message, message.length, clientIP, clientPort);

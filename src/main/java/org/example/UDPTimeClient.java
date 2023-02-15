@@ -1,22 +1,13 @@
 package org.example;
 
-import java.io.IOException;
 import java.net.*;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.sql.Time;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.SimpleTimeZone;
 import java.text.SimpleDateFormat;
-import java.util.Locale;
 
 public class UDPTimeClient {
     private DatagramSocket socket;
-    private byte[] buf = new byte[1024];
 
     public UDPTimeClient() throws SocketException {
         socket = new DatagramSocket();
@@ -25,39 +16,47 @@ public class UDPTimeClient {
     public static void main(String[] args) {
         try {
             InetAddress serverIP = InetAddress.getByName("129.6.15.28");
-            int serverPort = 37;
-
+            int port = 37;
             UDPTimeClient client = new UDPTimeClient();
-            client.service(serverIP, serverPort);
+            client.service(serverIP, port);
         } catch (SocketException e) {
             e.printStackTrace();
         } catch (UnknownHostException e) {
-            System.out.println("Could not resolve hostname.");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            System.out.println("Could not resolve the hostname.");
         }
     }
 
-    public void service(InetAddress serverIP, int serverPort) throws IOException {
-        DatagramPacket sendPacket = new DatagramPacket(buf, buf.length, serverIP, serverPort);
-        //SimpleDateFormat sdf = new SimpleDateFormat("EEEE, MMMM d, yyyy h:mm,a", Locale.ENGLISH);
+    public void service(InetAddress address, int port) {
+        byte[] buffer = new byte[0];
+        DatagramPacket request = new DatagramPacket(buffer, buffer.length, address, port);
 
         try {
-            socket.send(sendPacket);
+            socket.send(request);
 
-            byte[] receiveBuffer = new byte[1024];
-            DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
-            socket.receive(receivePacket);
+            buffer = new byte[4];
+            DatagramPacket response = new DatagramPacket(buffer, buffer.length);
+            socket.receive(response);
 
-
-            byte[] timeStamp = receivePacket.getData();
-            System.out.println("Reply from server: " + timeStamp.hashCode());
-
-            //DatagramPacket request = new DatagramPacket(new byte[1024], 32);
-            //socket.receive(request);
-
+            System.out.println(timeFormatter(buffer));
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+
+    public String timeFormatter(byte[] buffer) {
+        long secondsSince1900 = 0;
+        for (int i = 0; i < 4; i++) {
+            secondsSince1900 = (secondsSince1900 << 8) | (buffer[i] & 0xff);
+        }
+        long secondsSince1970 = secondsSince1900 - 2208988800L;
+        Date date = new Date(secondsSince1970 * 1000);
+
+        Calendar calendar = Calendar.getInstance();
+        SimpleTimeZone timeZone = new SimpleTimeZone(0, "UTC");
+        calendar.setTimeZone(timeZone);
+        calendar.setTime(date);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        return dateFormat.format(calendar.getTime());
     }
 }

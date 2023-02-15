@@ -19,12 +19,14 @@ public class ClientUDP {
         try {
             InetAddress serverIP = InetAddress.getByName(args[0]);
             int serverPort = Integer.parseInt(args[1]);
+            System.out.println(serverIP);
+            System.out.println(serverPort);
             ClientUDP client = new ClientUDP();
             client.service(serverIP, serverPort);
         } catch (SocketException e) {
             e.printStackTrace();
         } catch (UnknownHostException e) {
-            System.out.println("Could not resolve hostname.");
+            System.out.println("Could not resolve the hostname.");
         }
     }
 
